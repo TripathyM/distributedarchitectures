@@ -1,6 +1,6 @@
 package org.dist.mykafka
 
-import org.I0Itec.zkclient.ZkClient
+import org.I0Itec.zkclient.{IZkChildListener, ZkClient}
 import org.I0Itec.zkclient.exception.ZkNoNodeException
 import org.dist.kvstore.JsonSerDes
 import org.dist.queue.utils.ZkUtils
@@ -8,6 +8,7 @@ import org.dist.queue.utils.ZkUtils
 import scala.jdk.CollectionConverters._
 
 class MyZookeeperClient(zkClient: ZkClient) {
+
   val BrokerIdsPath = "/brokers/ids"
 
   def registerBroker(broker: ZkUtils.Broker)= {
@@ -41,5 +42,12 @@ class MyZookeeperClient(zkClient: ZkClient) {
     if (parentDir.length != 0)
       client.createPersistent(parentDir, true)
   }
+
+  def subscribeBrokerChangeListener(listener: IZkChildListener): Option[List[String]] = {
+    val result = zkClient.subscribeChildChanges(BrokerIdsPath, listener)
+    Option(result).map(_.asScala.toList)
+  }
+
+
 
 }
