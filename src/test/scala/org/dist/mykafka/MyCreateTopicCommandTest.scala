@@ -1,6 +1,5 @@
 package org.dist.mykafka
 
-import org.I0Itec.zkclient.ZkClient
 import org.dist.queue.ZookeeperTestHarness
 import org.dist.queue.utils.ZkUtils.Broker
 

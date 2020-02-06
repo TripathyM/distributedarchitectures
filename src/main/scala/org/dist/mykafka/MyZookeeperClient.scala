@@ -76,4 +76,10 @@ class MyZookeeperClient(zkClient: ZkClient) {
       }
     }
   }
+
+  def subscribeTopicChangeListener(listener: IZkChildListener): Option[List[String]] = {
+    val result = zkClient.subscribeChildChanges(BrokerTopicsPath, listener)
+    Option(result).map(_.asScala.toList)
+  }
+
 }
