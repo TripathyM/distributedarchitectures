@@ -2,8 +2,16 @@ package org.dist.mykafka
 
 import org.dist.queue.{TestUtils, ZookeeperTestHarness}
 import org.dist.queue.utils.ZkUtils.Broker
+import org.dist.mykafka.PartitionReplicas
 
 class MyTopicChangeHandlerTest extends ZookeeperTestHarness {
+
+  class TestContext {
+    var replicas:Seq[PartitionReplicas] = List()
+    def leaderAndIsr(topicName:String, replicas:Seq[PartitionReplicas]) = {
+      this.replicas = replicas
+    }
+  }
 
   test("should receive a callback for topic creation"){
     val zookeeperClient = new MyZookeeperClient(zkClient = zkClient)
@@ -15,7 +23,7 @@ class MyTopicChangeHandlerTest extends ZookeeperTestHarness {
 
     val myCreateTopicCommand = new MyCreateTopicCommand(zookeeperClient)
 
-    val myTopicChangeHandler = new MyTopicChangeHandler(zookeeperClient)
+    val myTopicChangeHandler = new MyTopicChangeHandler(zookeeperClient,new TestContext().leaderAndIsr)
     zookeeperClient.subscribeTopicChangeListener(myTopicChangeHandler)
 
     val topicName = "someTopicName"

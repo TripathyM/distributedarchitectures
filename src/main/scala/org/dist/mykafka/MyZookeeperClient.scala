@@ -5,7 +5,8 @@ import org.I0Itec.zkclient.{IZkChildListener, ZkClient}
 import org.I0Itec.zkclient.exception.{ZkNoNodeException, ZkNodeExistsException}
 import org.dist.kvstore.JsonSerDes
 import org.dist.queue.utils.ZkUtils
-import org.dist.simplekafka.ControllerExistsException
+import org.dist.queue.utils.ZkUtils.Broker
+import org.dist.simplekafka.{ControllerExistsException, LeaderAndReplicas}
 
 import scala.jdk.CollectionConverters._
 
@@ -14,6 +15,8 @@ class MyZookeeperClient(zkClient: ZkClient) {
 
   val BrokerTopicsPath = "/brokers/topics"
   val ControllerPath = "/controller"
+  val ReplicaLeaderElectionPath = "/topics/replica/leader"
+
   def registerBroker(broker: ZkUtils.Broker) = {
     val brokerData = JsonSerDes.serialize(broker)
     val brokerPath = getBrokerPath(broker.id)
@@ -92,5 +95,37 @@ class MyZookeeperClient(zkClient: ZkClient) {
       }
     }
   }
+
+  def getPartitionReplicaLeaderInfo(topicName: String): List[LeaderAndReplicas] = {
+    val leaderAndReplicas: String = zkClient.readData(getReplicaLeaderElectionPath(topicName))
+    JsonSerDes.deserialize[List[LeaderAndReplicas]](leaderAndReplicas.getBytes, new TypeReference[List[LeaderAndReplicas]]() {})
+  }
+
+  def getAllBrokers(): Set[Broker] = {
+    zkClient.getChildren(BrokerIdsPath).asScala.map(brokerId => {
+      val data: String = zkClient.readData(getBrokerPath(brokerId.toInt))
+      JsonSerDes.deserialize(data.getBytes, classOf[Broker])
+    }).toSet
+  }
+
+  def setPartitionLeaderForTopic(topicName: String, leaderAndReplicas: List[LeaderAndReplicas]): Unit = {
+
+    val leaderReplicaSerializer = JsonSerDes.serialize(leaderAndReplicas)
+    val path = getReplicaLeaderElectionPath(topicName);
+
+    try {
+      ZkUtils.updatePersistentPath(zkClient,path, leaderReplicaSerializer)
+    } catch {
+      case e: Throwable => {
+        println("Exception while writing data to partition leader data" + e)
+      }
+    }
+  }
+
+
+  def getReplicaLeaderElectionPath(topicName: String) = {
+    ReplicaLeaderElectionPath + "/" + topicName
+  }
+
 
 }

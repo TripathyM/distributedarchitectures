@@ -23,4 +23,6 @@ class MyControllerTest extends ZookeeperTestHarness {
     assert(myController2.currentLeader == brokerOne.id)
   }
 
+
+
 }
